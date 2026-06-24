@@ -10,7 +10,7 @@ A lightweight Windows desktop app that brings your **DeepL Pro** subscription to
 
 - **Instant translation** — type or paste and results appear automatically
 - **Global hotkey** `Ctrl+C+C` — copy any text anywhere and it opens translated
-- **Auto-login** — reads your active DeepL Pro session from Brave browser automatically, no manual token setup
+- **Auto-login** — reads your active DeepL Pro session from your browser automatically, no manual token setup
 - **Classic & Next-gen engine** toggle per translation
 - **Language swap** — flip source and target with one click
 - **System tray** — minimizes to tray, always one click away
@@ -22,7 +22,7 @@ A lightweight Windows desktop app that brings your **DeepL Pro** subscription to
 
 - Windows 10 or 11 (64-bit)
 - [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) — x64
-- An active **DeepL Pro** subscription logged in via Brave browser
+- An active **DeepL Pro** subscription logged in via any browser
 
 ## Installation
 
