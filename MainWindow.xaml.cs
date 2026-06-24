@@ -116,7 +116,7 @@ public partial class MainWindow : Window
         }
 
         // 3. dl_access cookie from browser (works without OIDC tokens)
-        var all = await Task.Run(BraveExtractor.ExtractAll);
+        var all = await Task.Run(CookieExtractor.ExtractAll);
         if (all != null && all.TryGetValue("dl_access", out var bTok) && !DeepLApi.IsTokenExpired(bTok))
         {
             _cookies      = all;
