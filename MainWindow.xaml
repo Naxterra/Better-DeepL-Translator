@@ -1,0 +1,219 @@
+﻿<Window x:Class="DeepLTranslator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Better DeepL Übersetzer"
+        Width="940" Height="540" MinWidth="640" MinHeight="380"
+        Background="{StaticResource BgWindow}"
+        Foreground="{StaticResource FgMain}"
+        FontFamily="Segoe UI" FontSize="13">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>   <!-- title bar -->
+            <RowDefinition Height="44"/>   <!-- lang selectors -->
+            <RowDefinition Height="*"/>    <!-- text areas -->
+            <RowDefinition Height="38"/>   <!-- action bar -->
+            <RowDefinition Height="26"/>   <!-- status bar -->
+        </Grid.RowDefinitions>
+
+        <!-- ═══ Title bar ═══ -->
+        <Border Grid.Row="0" Background="{StaticResource BgPanel}">
+            <Grid Margin="12,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- App name -->
+                <TextBlock x:Name="TitleText" Grid.Column="0" Text="DeepL Übersetzer"
+                           FontSize="15" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+
+                <!-- Pro badge -->
+                <TextBlock x:Name="Badge" Grid.Column="1"
+                           Margin="10,0,0,0" VerticalAlignment="Center"
+                           FontSize="12" Foreground="#4caf50"/>
+
+                <!-- DE / EN language toggle -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,8,0">
+                    <RadioButton x:Name="LangDeRb" Content="DE"
+                                 Style="{StaticResource SegBtn}"
+                                 Checked="UiLang_Changed" Margin="0,0,4,0"/>
+                    <RadioButton x:Name="LangEnRb" Content="EN"
+                                 Style="{StaticResource SegBtn}"
+                                 Checked="UiLang_Changed"/>
+                </StackPanel>
+
+                <!-- Engine toggle -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,8,0">
+                    <RadioButton x:Name="ClassicRb" Content="Classic"
+                                 Style="{StaticResource SegBtn}"
+                                 Checked="Engine_Changed" Margin="0,0,4,0"/>
+                    <RadioButton x:Name="NextgenRb" Content="Next-gen"
+                                 Style="{StaticResource SegBtn}"
+                                 Checked="Engine_Changed"/>
+                </StackPanel>
+
+                <!-- Verbindung button — always opens context menu -->
+                <Button x:Name="VerbindungBtn" Grid.Column="4" Content="⚙ Verbindung"
+                        Style="{StaticResource GrayBtn}"
+                        Padding="10,5" Click="Verbindung_Click">
+                    <Button.ContextMenu>
+                        <ContextMenu Style="{StaticResource DarkCtxMenu}">
+                            <ContextMenu.Resources>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="Background"  Value="Transparent"/>
+                                    <Setter Property="Foreground"  Value="{StaticResource FgMain}"/>
+                                    <Setter Property="FontSize"    Value="13"/>
+                                    <Setter Property="Cursor"      Value="Hand"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="MenuItem">
+                                                <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                                        CornerRadius="4" Margin="4,1">
+                                                    <Grid Margin="8,6">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="18"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock x:Name="Check" Grid.Column="0" Text="✓"
+                                                                   Foreground="{StaticResource Accent}"
+                                                                   VerticalAlignment="Center"
+                                                                   HorizontalAlignment="Center"
+                                                                   Visibility="Collapsed" FontSize="11"/>
+                                                        <ContentPresenter Grid.Column="1" ContentSource="Header"
+                                                                          VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsHighlighted" Value="True">
+                                                        <Setter TargetName="Bd" Property="Background" Value="#3a3a3a"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bd" Property="Background" Value="#3a3a3a"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="Check" Property="Visibility" Value="Visible"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Style TargetType="Separator">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Separator">
+                                                <Rectangle Height="1" Fill="{StaticResource Border}" Margin="8,3"/>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ContextMenu.Resources>
+                            <MenuItem x:Name="MenuItemLogin"   Header="Anmelden"       Click="Login_Click"/>
+                            <MenuItem x:Name="MenuItemSwitch"  Header="Konto wechseln" Click="SwitchAccount_Click"/>
+                            <MenuItem x:Name="MenuItemLogout"  Header="Abmelden"       Click="Logout_Click"/>
+                            <Separator/>
+                            <MenuItem x:Name="MenuItemStartup" Header="Mit Windows starten"
+                                      IsCheckable="True" Click="Startup_Click"/>
+                            <Separator/>
+                            <MenuItem x:Name="MenuItemAbout" Header="Über" Click="About_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Language bar ═══ -->
+        <Border Grid.Row="1" Background="{StaticResource BgPanel}"
+                BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,1">
+            <Grid Margin="10,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="56"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <ComboBox x:Name="SrcCombo" Grid.Column="0"
+                          SelectionChanged="Lang_Changed"/>
+
+                <!-- Swap button -->
+                <Button Grid.Column="1" Content="⇌"
+                        Style="{StaticResource GrayBtn}"
+                        FontSize="17" Padding="0"
+                        Margin="6,0" Click="Swap_Click"/>
+
+                <ComboBox x:Name="TgtCombo" Grid.Column="2"
+                          SelectionChanged="Lang_Changed"/>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Text areas ═══ -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="1"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="SrcBox" Grid.Column="0"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     BorderThickness="0"
+                     TextChanged="SrcBox_Changed"
+                     KeyDown="SrcBox_KeyDown"/>
+
+            <!-- Divider -->
+            <Rectangle Grid.Column="1"
+                       Fill="{StaticResource Border}"/>
+
+            <TextBox x:Name="TgtBox" Grid.Column="2"
+                     AcceptsReturn="True" TextWrapping="Wrap" IsReadOnly="True"
+                     VerticalScrollBarVisibility="Auto"
+                     BorderThickness="0"
+                     Background="{StaticResource BgPanel}"/>
+        </Grid>
+
+        <!-- ═══ Action bar ═══ -->
+        <Border Grid.Row="3" Background="{StaticResource BgPanel}"
+                BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0">
+            <Grid Margin="10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="1"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: char count + clear -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="CharCount" Text="0 / 5000"
+                               Foreground="{StaticResource FgMuted}"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <Button x:Name="ClearBtn" Content="✕ Löschen" Style="{StaticResource GrayBtn}"
+                            Padding="8,4" Click="Clear_Click"/>
+                </StackPanel>
+
+                <Rectangle Grid.Column="1" Fill="{StaticResource Border}"/>
+
+                <!-- Right: copy -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="CopyBtn" Content="📋 Kopieren" Style="{StaticResource GrayBtn}"
+                            Padding="8,4" Click="Copy_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Status bar ═══ -->
+        <Border Grid.Row="4" Background="#161616">
+            <TextBlock x:Name="StatusText" Text="Bereit"
+                       VerticalAlignment="Center" Margin="12,0"
+                       Foreground="{StaticResource FgMuted}" FontSize="11"/>
+        </Border>
+    </Grid>
+</Window>
