@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net11.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
@@ -11,17 +11,19 @@
     <AssemblyName>Better DeepL Translator</AssemblyName>
     <Product>Better DeepL Translator</Product>
     <Description>DeepL Pro desktop client for Windows</Description>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Optimize>true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite">
-      <Version>10.0.9</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.ProtectedData">
-      <Version>10.0.9</Version>
-    </PackageReference>
+    <!-- The test project lives below the repository root and must not be compiled into the app. -->
+    <Compile Remove="tests\**" />
+    <None Remove="tests\**" />
+    <Page Remove="tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DeepLTranslator.Tests" />
   </ItemGroup>
 
   <ItemGroup>

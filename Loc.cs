@@ -27,9 +27,11 @@ public static class Loc
     public static string StatusLoggedIn  => En ? "Logged in."                              : "Angemeldet.";
     public static string StatusLoggedOut => En ? "Logged out."                             : "Abgemeldet.";
     public static string StatusCancelled => En ? "Login cancelled or failed."              : "Anmeldung abgebrochen oder fehlgeschlagen.";
-    public static string StatusNotAuth   => En ? "Not logged in — click ⚙ Connect"        : "Nicht angemeldet — bitte ⚙ Connect klicken";
+    public static string StatusNotAuth   => En ? "Not logged in. Click ⚙ Connect."         : "Nicht angemeldet. Bitte ⚙ Verbindung klicken.";
     public static string StatusTranslating => En ? "Translating…"                          : "Übersetze…";
     public static string StatusError     => En ? "Error: "                                 : "Fehler: ";
+    public static string StatusOffline   => En ? "No connection to DeepL. Retrying automatically…"
+                                               : "Keine Verbindung zu DeepL. Neuer Versuch läuft automatisch…";
 
     public static string MenuStartup      => En ? "Start with Windows"                      : "Mit Windows starten";
     public static string MenuAbout        => En ? "About"                                   : "Über";

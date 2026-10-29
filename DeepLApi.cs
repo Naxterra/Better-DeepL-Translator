@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
@@ -6,26 +7,14 @@ using System.Text.Json.Serialization;
 
 namespace DeepLTranslator;
 
+/// <summary>DeepL rejected the access token, so it has to be renewed before trying again.</summary>
+public sealed class AuthExpiredException() : Exception("DeepL rejected the login token.");
+
 public static class DeepLApi
 {
     const string ProEndpoint = "https://oneshot-pro.www.deepl.com/v1/translate";
 
     static readonly string InstanceId = Guid.NewGuid().ToString();
-
-    static readonly HttpClient Http = new(new HttpClientHandler
-    {
-        AutomaticDecompression = System.Net.DecompressionMethods.All,
-        UseCookies = false,
-    })
-    {
-        Timeout = TimeSpan.FromSeconds(30),
-    };
-
-    static DeepLApi()
-    {
-        Http.DefaultRequestHeaders.Referrer = new Uri("https://www.deepl.com/");
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd("DeepLNative/1.0 Windows");
-    }
 
     sealed class TranslationRequest
     {
@@ -77,13 +66,12 @@ public static class DeepLApi
     public static async Task<(string Text, string? DetectedLang)> TranslateAsync(
         string text,
         string tgtLang,
-        string srcLang                      = "auto",
-        Dictionary<string, string>? cookies = null,
-        bool   nextGen                      = false,
-        CancellationToken ct                = default)
+        string srcLang          = "auto",
+        string? accessToken     = null,
+        bool   nextGen          = false,
+        CancellationToken ct    = default,
+        ResilientHttp? http     = null)
     {
-        var token = cookies != null && cookies.TryGetValue("dl_access", out var t) ? t : null;
-
         var body = new TranslationRequest
         {
             Text          = [text],
@@ -97,18 +85,22 @@ public static class DeepLApi
             },
         };
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, ProEndpoint)
+        using var resp = await (http ?? Net.Shared).SendAsync(() =>
         {
-            Content = JsonContent.Create(body),
-        };
-        req.Headers.TryAddWithoutValidation("Accept", "application/json");
-        if (!string.IsNullOrEmpty(token))
-            req.Headers.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var req = new HttpRequestMessage(HttpMethod.Post, ProEndpoint)
+            {
+                Content = JsonContent.Create(body),
+            };
+            req.Headers.TryAddWithoutValidation("Accept", "application/json");
+            if (!string.IsNullOrEmpty(accessToken))
+                req.Headers.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            return req;
+        }, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
 
-        var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-        var raw  = await resp.Content.ReadAsStringAsync(ct);
-
+        if (resp.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            throw new AuthExpiredException();
         if (!resp.IsSuccessStatusCode)
             throw new Exception($"HTTP {(int)resp.StatusCode}: {raw[..Math.Min(200, raw.Length)]}");
 

@@ -1,0 +1,19 @@
+# Must never happen
+
+Draft, waiting for the owner's approval. Each item names the tests that cover it, or says that no test covers it yet.
+
+| # | The app must never | Covered by |
+|---|---|---|
+| 1 | leave the settings file half-written or replace good settings with a broken file. | `ConfigTests::save_cannot_write_original_settings_file_unchanged`, `ConfigTests::settings_saved_and_reloaded_with_no_temporary_file_left` |
+| 2 | crash or refuse to start because the settings file is damaged. | `ConfigTests::damaged_settings_file_loads_defaults_without_crashing` |
+| 3 | store login tokens on disk in plain text. | `ConfigTests::login_tokens_saved_encrypted_never_in_plain_text`, `ConfigTests::old_plain_text_tokens_migrated_and_removed_from_file` |
+| 4 | leave the deepl:// link handler pointing at this app after a login, even if the app crashed during the login. | `SchemeHandlerTests::login_without_existing_handler_leaves_no_registry_keys_behind`, `SchemeHandlerTests::second_login_after_crash_still_restores_real_original_handler` |
+| 5 | overwrite or delete the official DeepL app's link handler or other registry keys it did not create. | `SchemeHandlerTests::login_with_existing_handler_restores_original_command`, `SchemeHandlerTests::existing_scheme_key_without_command_gets_only_created_keys_removed`, `SchemeHandlerTests::start_without_unfinished_login_changes_nothing` |
+| 6 | hang forever on a dead connection after a network switch or a dropped network. | `NetworkTests::network_change_mid_request_moves_request_to_fresh_connection`, `NetworkTests::request_hangs_past_attempt_limit_then_retried_and_succeeds`, `NetworkTests::every_attempt_fails_reports_offline_instead_of_hanging` |
+| 7 | freeze or go blank when the network changes. The window must stay usable and say that it is offline. | No test yet. The UI behaviour was not tested in the running app. |
+| 8 | throw away a valid login only because DeepL could not be reached. | `NetworkTests::token_refresh_while_offline_reports_offline_so_login_is_kept` |
+| 9 | show the translation of older text after newer text was typed. | No test yet. |
+| 10 | read browser cookies, saved passwords or other programs' data. | No test. The code that did this was removed in 1.1.0. |
+| 11 | send the user's text anywhere other than DeepL. | No test yet. |
+| 12 | swallow key presses or break Ctrl+C in other programs through the Ctrl+C+C keyboard hook. | No test yet. |
+| 13 | leave the "Start with Windows" entry behind after it was switched off. | No test yet. The app has no installer, so there is no uninstall step to check. |

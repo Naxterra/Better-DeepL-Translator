@@ -3,14 +3,15 @@
 A lightweight Windows desktop app that brings your **DeepL Pro** subscription to the desktop — no browser tab needed.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)
-![.NET](https://img.shields.io/badge/.NET-10-purple)
+![.NET](https://img.shields.io/badge/.NET-11-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
 - **Instant translation** — type or paste and results appear automatically
 - **Global hotkey** `Ctrl+C+C` — copy any text anywhere and it opens translated
-- **Auto-login** — reads your active DeepL Pro session from your browser automatically, no manual token setup
+- **Survives network switches**: when Windows switches networks (Wi-Fi, LAN, VPN), the app drops its old connections and retries on the new network instead of going blank
+- **Login once**: sign in with your DeepL Pro account in the browser. The session is renewed automatically and stored encrypted for your Windows user
 - **Classic & Next-gen engine** toggle per translation
 - **Language swap** — flip source and target with one click
 - **System tray** — minimizes to tray, always one click away
@@ -21,8 +22,8 @@ A lightweight Windows desktop app that brings your **DeepL Pro** subscription to
 ## Requirements
 
 - Windows 10 or 11 (64-bit)
-- [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) — x64
-- An active **DeepL Pro** subscription logged in via any browser
+- [.NET 11 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/11.0) (x64)
+- An active **DeepL Pro** subscription
 
 ## Installation
 
@@ -49,10 +50,10 @@ After the first login the session is cached; subsequent launches connect automat
 ```
 git clone https://github.com/Naxterra/Better-DeepL-Translator.git
 cd Better-DeepL-Translator
-dotnet publish -c Release -r win-x64 --no-self-contained -o dist
+dotnet publish DeepLTranslator.csproj -c Release -r win-x64 --no-self-contained -o dist
 ```
 
-Requires .NET 10 SDK.
+Run the tests with `dotnet test`. Building requires the .NET 11 SDK.
 
 ## Disclaimer
 

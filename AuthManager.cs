@@ -19,55 +19,14 @@ public static class AuthManager
     // does a secondary JS redirect to deepl://app/?code=...&state=... triggering our handler.
     const string DeepLRedirect = "https://www.deepl.com/redirect";
 
-    const string ProtocolKey = @"Software\Classes\deepl\shell\open\command";
-
-    static readonly HttpClient Http = new(new HttpClientHandler { UseCookies = false })
-    {
-        Timeout = TimeSpan.FromSeconds(30),
-        DefaultRequestVersion = System.Net.HttpVersion.Version11,
-    };
-
-    // ── Legacy token renewal (used after initial PKCE login) ─────────────────────
-
-    /// <summary>
-    /// Renews an OIDC access token using the legacy_session grant (DeepL's custom
-    /// refresh mechanism that also sends the identity token as an extra parameter).
-    /// The real DeepL app uses this instead of standard refresh_token when the
-    /// token was originally issued by www.deepl.com.
-    /// </summary>
-    public static async Task<(string Access, string? Refresh)?> LegacyLoginAsync(
-        string refreshToken, string identityToken, CancellationToken ct = default)
-    {
-        // Mirrors LegacyRenewRequester.SendRefreshTokenRequest from decompiled source:
-        // grant_type=legacy_session, refresh_token=<token>, id_token=<identity>, scope=...
-        var form = new Dictionary<string, string>
-        {
-            ["grant_type"]    = "legacy_session",
-            ["client_id"]     = ClientId,
-            ["refresh_token"] = refreshToken,
-            ["scope"]         = Scope,
-        };
-        if (!string.IsNullOrEmpty(identityToken))
-            form["id_token"] = identityToken;
-
-        try
-        {
-            var resp = await Http.PostAsync($"{Authority}/token",
-                new FormUrlEncodedContent(form), ct);
-            if (!resp.IsSuccessStatusCode) return null;
-            var raw = await resp.Content.ReadAsStringAsync(ct);
-            return ParseTokenResponse(raw);
-        }
-        catch { return null; }
-    }
-
-    // ── Fallback: full PKCE browser login ────────────────────────────────────────
+    // ── PKCE browser login ───────────────────────────────────────────────────────
 
     /// <summary>
     /// Opens the system browser to auth.deepl.com.  After the user logs in, the auth
     /// server redirects to deepl://app[/]?code=…  We intercept this by temporarily
     /// registering our exe as the deepl:// URL handler, accept the callback over a
     /// named pipe (from the second instance the OS launches), then exchange the code.
+    /// Returns null when the login was cancelled, timed out or was rejected.
     /// </summary>
     public static async Task<(string Access, string? Refresh, string? Identity)?> LoginAsync(
         CancellationToken ct = default)
@@ -77,10 +36,11 @@ public static class AuthManager
         var state     = MakeVerifier();
         var nonce     = MakeVerifier();
 
-        var ourExe      = Process.GetCurrentProcess().MainModule!.FileName;
+        var ourExe      = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule!.FileName;
         var callbackTcs = new TaskCompletionSource<string?>();
 
-        RegisterSchemeHandler(ourExe, callbackTcs);
+        _callbackTcs = callbackTcs;
+        Scheme.Take(ourExe);
         try
         {
             var authUrl = $"{Authority}/authorize" +
@@ -111,7 +71,8 @@ public static class AuthManager
         }
         finally
         {
-            RestoreSchemeHandler();
+            _callbackTcs = null;
+            Scheme.RestoreLeftover();
         }
     }
 
@@ -124,56 +85,55 @@ public static class AuthManager
 
     // ── Silent refresh via stored refresh token ───────────────────────────────────
 
+    /// <summary>
+    /// Returns new tokens, or null when DeepL rejected the refresh token. Throws
+    /// <see cref="OfflineException"/> when DeepL could not be reached, because the stored
+    /// login is still good in that case and must not be thrown away.
+    /// </summary>
     public static async Task<(string Access, string? Refresh)?> RefreshAsync(
-        string refreshToken, CancellationToken ct = default)
+        string refreshToken, CancellationToken ct = default, ResilientHttp? http = null)
     {
-        var resp = await Http.PostAsync($"{Authority}/token",
-            new FormUrlEncodedContent(new Dictionary<string, string>
+        using var resp = await (http ?? Net.Shared).SendAsync(() =>
+            new HttpRequestMessage(HttpMethod.Post, $"{Authority}/token")
             {
-                ["grant_type"]    = "refresh_token",
-                ["client_id"]     = ClientId,
-                ["refresh_token"] = refreshToken,
-            }), ct);
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["grant_type"]    = "refresh_token",
+                    ["client_id"]     = ClientId,
+                    ["refresh_token"] = refreshToken,
+                }),
+            }, ct);
 
+        if ((int)resp.StatusCode >= 500 || resp.StatusCode == HttpStatusCode.TooManyRequests)
+            throw new OfflineException($"HTTP {(int)resp.StatusCode}");
         if (!resp.IsSuccessStatusCode) return null;
         var raw = await resp.Content.ReadAsStringAsync(ct);
         return ParseTokenResponse(raw);
     }
 
-    // ── PKCE helpers ─────────────────────────────────────────────────────────────
+    static readonly SchemeHandlerGuard Scheme = SchemeHandlerGuard.ForCurrentUser();
 
-    static string? _savedHandler;
-
-    static void RegisterSchemeHandler(string exePath, TaskCompletionSource<string?> tcs)
+    /// <summary>Undoes the deepl:// handler change of a login that was cut short by a crash.</summary>
+    public static void RestoreLeftoverSchemeHandler()
     {
-        _callbackTcs = tcs;
-        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(ProtocolKey, writable: true)
-                     ?? Microsoft.Win32.Registry.CurrentUser.CreateSubKey(ProtocolKey);
-        _savedHandler = key.GetValue(null) as string;
-        key.SetValue(null, $"\"{exePath}\" \"%1\"");
-    }
-
-    static void RestoreSchemeHandler()
-    {
-        _callbackTcs = null;
-        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(ProtocolKey, writable: true);
-        if (key == null) return;
-        if (_savedHandler != null) key.SetValue(null, _savedHandler);
-        _savedHandler = null;
+        try { Scheme.RestoreLeftover(); } catch { }
     }
 
     static async Task<(string Access, string? Refresh, string? Identity)?> ExchangeCodeFull(
         string code, string redirectUri, string verifier, CancellationToken ct)
     {
-        var resp = await Http.PostAsync($"{Authority}/token",
-            new FormUrlEncodedContent(new Dictionary<string, string>
+        using var resp = await Net.Shared.SendAsync(() =>
+            new HttpRequestMessage(HttpMethod.Post, $"{Authority}/token")
             {
-                ["grant_type"]    = "authorization_code",
-                ["client_id"]     = ClientId,
-                ["code"]          = code,
-                ["redirect_uri"]  = redirectUri,
-                ["code_verifier"] = verifier,
-            }), ct);
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["grant_type"]    = "authorization_code",
+                    ["client_id"]     = ClientId,
+                    ["code"]          = code,
+                    ["redirect_uri"]  = redirectUri,
+                    ["code_verifier"] = verifier,
+                }),
+            }, ct);
 
         if (!resp.IsSuccessStatusCode) return null;
         var raw = await resp.Content.ReadAsStringAsync(ct);
