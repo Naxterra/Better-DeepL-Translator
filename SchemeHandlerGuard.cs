@@ -12,6 +12,11 @@ public sealed class SchemeHandlerGuard(RegistryKey root, string schemeKeyPath, s
     const string CommandSubKey = @"shell\open\command";
     const string BackupExisted = "ExistedLevels";
     const string BackupValue   = "SchemeCommand";
+    const string BackupHadUrlProtocol = "HadUrlProtocol";
+
+    // Without this value Windows does not treat the key as a link scheme, so browsers report
+    // that no app can open deepl:// links.
+    const string UrlProtocol = "URL Protocol";
 
     public static SchemeHandlerGuard ForCurrentUser() => new(
         Registry.CurrentUser, @"Software\Classes\deepl", @"Software\DeepL-Translator\LoginBackup");
@@ -39,13 +44,19 @@ public sealed class SchemeHandlerGuard(RegistryKey root, string schemeKeyPath, s
         string? previous;
         using (var cmd = root.OpenSubKey(CommandKeyPath))
             previous = cmd?.GetValue(null) as string;
+        bool hadUrlProtocol;
+        using (var scheme = root.OpenSubKey(schemeKeyPath))
+            hadUrlProtocol = scheme?.GetValue(UrlProtocol) != null;
 
         using (var backup = root.CreateSubKey(backupKeyPath))
         {
             backup.SetValue(BackupExisted, existed, RegistryValueKind.DWord);
+            backup.SetValue(BackupHadUrlProtocol, hadUrlProtocol ? 1 : 0, RegistryValueKind.DWord);
             if (previous != null) backup.SetValue(BackupValue, previous);
         }
 
+        using (var scheme = root.CreateSubKey(schemeKeyPath))
+            if (!hadUrlProtocol) scheme.SetValue(UrlProtocol, "");
         using var key = root.CreateSubKey(CommandKeyPath);
         key.SetValue(null, $"\"{exePath}\" \"%1\"");
     }
@@ -55,11 +66,19 @@ public sealed class SchemeHandlerGuard(RegistryKey root, string schemeKeyPath, s
     {
         int existed;
         string? previous;
+        bool hadUrlProtocol;
         using (var backup = root.OpenSubKey(backupKeyPath))
         {
             if (backup == null) return;
-            existed  = backup.GetValue(BackupExisted) is int i ? i : 0;
-            previous = backup.GetValue(BackupValue) as string;
+            existed        = backup.GetValue(BackupExisted) is int i ? i : 0;
+            previous       = backup.GetValue(BackupValue) as string;
+            hadUrlProtocol = backup.GetValue(BackupHadUrlProtocol) is int u && u == 1;
+        }
+
+        if ((existed & 1) != 0 && !hadUrlProtocol)
+        {
+            using var scheme = root.OpenSubKey(schemeKeyPath, writable: true);
+            scheme?.DeleteValue(UrlProtocol, throwOnMissingValue: false);
         }
 
         var levels = Levels;

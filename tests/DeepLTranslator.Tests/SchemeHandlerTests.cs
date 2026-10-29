@@ -77,6 +77,29 @@ public sealed class SchemeHandlerTests : IDisposable
     }
 
     [Fact]
+    public void waiting_login_registers_deepl_as_link_scheme_windows_can_open()
+    {
+        Guard().Take(@"C:\App\app.exe");
+
+        using var scheme = Registry.CurrentUser.OpenSubKey(Scheme)!;
+        Assert.Equal("", scheme.GetValue("URL Protocol"));
+    }
+
+    [Fact]
+    public void existing_scheme_key_without_url_protocol_gets_added_value_removed()
+    {
+        using (var key = Registry.CurrentUser.CreateSubKey(Command))
+            key.SetValue(null, "\"C:\\Other\\other.exe\" \"%1\"");
+
+        Guard().Take(@"C:\App\app.exe");
+        Guard().RestoreLeftover();
+
+        using var scheme = Registry.CurrentUser.OpenSubKey(Scheme)!;
+        Assert.DoesNotContain("URL Protocol", scheme.GetValueNames());
+        Assert.Equal("\"C:\\Other\\other.exe\" \"%1\"", CommandValue());
+    }
+
+    [Fact]
     public void second_login_after_crash_still_restores_real_original_handler()
     {
         using (var key = Registry.CurrentUser.CreateSubKey(Command))
