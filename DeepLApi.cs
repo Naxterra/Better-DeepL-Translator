@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
@@ -6,26 +7,14 @@ using System.Text.Json.Serialization;
 
 namespace DeepLTranslator;
 
+/// <summary>DeepL rejected the access token, so it has to be renewed before trying again.</summary>
+public sealed class AuthExpiredException() : Exception("DeepL rejected the login token.");
+
 public static class DeepLApi
 {
     const string ProEndpoint = "https://oneshot-pro.www.deepl.com/v1/translate";
 
     static readonly string InstanceId = Guid.NewGuid().ToString();
-
-    static readonly HttpClient Http = new(new HttpClientHandler
-    {
-        AutomaticDecompression = System.Net.DecompressionMethods.All,
-        UseCookies = false,
-    })
-    {
-        Timeout = TimeSpan.FromSeconds(30),
-    };
-
-    static DeepLApi()
-    {
-        Http.DefaultRequestHeaders.Referrer = new Uri("https://www.deepl.com/");
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd("DeepLNative/1.0 Windows");
-    }
 
     sealed class TranslationRequest
     {
@@ -77,13 +66,12 @@ public static class DeepLApi
     public static async Task<(string Text, string? DetectedLang)> TranslateAsync(
         string text,
         string tgtLang,
-        string srcLang                      = "auto",
-        Dictionary<string, string>? cookies = null,
-        bool   nextGen                      = false,
-        CancellationToken ct                = default)
+        string srcLang          = "auto",
+        string? accessToken     = null,
+        bool   nextGen          = false,
+        CancellationToken ct    = default,
+        ResilientHttp? http     = null)
     {
-        var token = cookies != null && cookies.TryGetValue("dl_access", out var t) ? t : null;
-
         var body = new TranslationRequest
         {
             Text          = [text],
@@ -97,18 +85,22 @@ public static class DeepLApi
             },
         };
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, ProEndpoint)
+        using var resp = await (http ?? Net.Shared).SendAsync(() =>
         {
-            Content = JsonContent.Create(body),
-        };
-        req.Headers.TryAddWithoutValidation("Accept", "application/json");
-        if (!string.IsNullOrEmpty(token))
-            req.Headers.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var req = new HttpRequestMessage(HttpMethod.Post, ProEndpoint)
+            {
+                Content = JsonContent.Create(body),
+            };
+            req.Headers.TryAddWithoutValidation("Accept", "application/json");
+            if (!string.IsNullOrEmpty(accessToken))
+                req.Headers.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            return req;
+        }, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
 
-        var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-        var raw  = await resp.Content.ReadAsStringAsync(ct);
-
+        if (resp.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            throw new AuthExpiredException();
         if (!resp.IsSuccessStatusCode)
             throw new Exception($"HTTP {(int)resp.StatusCode}: {raw[..Math.Min(200, raw.Length)]}");
 
@@ -117,6 +109,20 @@ public static class DeepLApi
                      ?? throw new Exception("Keine Übersetzung erhalten.");
 
         return (first.Text, first.DetectedSourceLanguage);
+    }
+
+    /// <summary>
+    /// Returns the target to switch to when DeepL detected that the text is already in the
+    /// target language: German goes to English (US), every other language to German.
+    /// Returns null when the target can stay.
+    /// </summary>
+    public static string? AutoTarget(string? detectedLang, string tgtLang)
+    {
+        if (string.IsNullOrEmpty(detectedLang)) return null;
+        var detected = detectedLang.Split('-')[0];
+        var target   = tgtLang.Split('-')[0];
+        if (!detected.Equals(target, StringComparison.OrdinalIgnoreCase)) return null;
+        return detected.Equals("de", StringComparison.OrdinalIgnoreCase) ? "en-US" : "de";
     }
 
     public static bool IsTokenExpired(string token)

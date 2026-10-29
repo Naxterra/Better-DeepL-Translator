@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/DeepLTranslator.Tests/DeepLTranslator.Tests.csproj" />
+  </Folder>
+  <Project Path="DeepLTranslator.csproj" />
+</Solution>

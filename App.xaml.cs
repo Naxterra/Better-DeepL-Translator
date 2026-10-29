@@ -38,6 +38,11 @@ public partial class App : Application
         _mutex = new Mutex(true, "DeepL-Translator-7F3A", out bool first);
         if (!first) { Shutdown(); return; }
 
+        // Undo the deepl:// handler change of a login that a crash cut short, then start
+        // replacing dead connections whenever Windows reports a network change.
+        AuthManager.RestoreLeftoverSchemeHandler();
+        Net.WatchNetworkChanges();
+
         // Listen for OAuth callbacks from second instances
         _ = Task.Run(ListenForCallbacks);
 
@@ -96,6 +101,7 @@ public partial class App : Application
 
     void ExitApp()
     {
+        (MainWindow as MainWindow)?.SaveSettings();
         TrayIcon?.Dispose();
         Hotkey?.Dispose();
         _mutex?.ReleaseMutex();

@@ -21,12 +21,16 @@ public partial class MainWindow : Window
     readonly Config           _cfg  = Config.Load();
     readonly DispatcherTimer  _debounce;
     CancellationTokenSource   _cts  = new();
-    Dictionary<string, string>? _cookies;
+    string?                   _token;
     bool                      _nextGen;
     string                    _lastSrc = "";
+    bool                      _failed;          // last translation could not reach DeepL
+    bool                      _autoSwitching;   // the app itself is changing the target language
+    readonly SemaphoreSlim    _refreshLock = new(1, 1);
 
-    // ── Auto-refresh timer ──
+    // ── Auto-refresh and offline-retry timers ──
     readonly DispatcherTimer  _refresh;
+    readonly DispatcherTimer  _retry;
 
     public MainWindow()
     {
@@ -39,6 +43,17 @@ public partial class MainWindow : Window
         _refresh = new DispatcherTimer { Interval = TimeSpan.FromMinutes(15) };
         _refresh.Tick += async (_, _) => await RefreshTokenAsync();
         _refresh.Start();
+
+        // While DeepL is unreachable, try again every few seconds. A network change also
+        // triggers a retry right away, see OnNetworkReset.
+        _retry = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _retry.Tick += (_, _) =>
+        {
+            _retry.Interval = TimeSpan.FromSeconds(5);
+            if (!_failed) { _retry.Stop(); return; }
+            _ = TranslateAsync();
+        };
+        Net.Shared.Reset += () => Dispatcher.BeginInvoke(OnNetworkReset);
 
         // Restore UI language before populating combos (language names depend on it)
         Loc.SetLanguage(_cfg.UiLang);
@@ -74,8 +89,8 @@ public partial class MainWindow : Window
 
         Loaded          += OnLoaded;
         Closing         += OnClosing;
-        SizeChanged     += (_, _) => SaveGeometry();
-        LocationChanged += (_, _) => SaveGeometry();
+        SizeChanged     += (_, _) => RememberGeometry();
+        LocationChanged += (_, _) => RememberGeometry();
     }
 
     // ──────────────────────────────────── Startup ────────────────────────────────────
@@ -90,51 +105,67 @@ public partial class MainWindow : Window
         await RefreshTokenAsync();
     }
 
-    async Task RefreshTokenAsync()
+    /// <summary>
+    /// Makes sure a usable access token is loaded. Never throws: when DeepL cannot be reached,
+    /// the stored login is kept and the status shows that the app is offline.
+    /// </summary>
+    async Task RefreshTokenAsync(bool force = false)
     {
-        // 1. Current token still valid → nothing to do
-        if (_cookies != null &&
-            _cookies.TryGetValue("dl_access", out var cur) &&
-            !DeepLApi.IsTokenExpired(cur))
-            return;
-
-        SetStatus(Loc.StatusChecking);
-
-        // 2. Standard OIDC refresh token
-        if (!string.IsNullOrEmpty(_cfg.RefreshToken))
+        await _refreshLock.WaitAsync();
+        try
         {
-            var result = await AuthManager.RefreshAsync(_cfg.RefreshToken);
-            if (result.HasValue)
+            // 1. Current token still valid → nothing to do
+            if (!force && _token != null && !DeepLApi.IsTokenExpired(_token))
+                return;
+
+            SetStatus(Loc.StatusChecking);
+
+            // 2. Standard OIDC refresh token
+            if (!string.IsNullOrEmpty(_cfg.RefreshToken))
             {
-                var (access, refresh) = result.Value;
-                _cookies          = new Dictionary<string, string> { ["dl_access"] = access };
-                _cfg.DlAccess     = access;
-                if (refresh != null) _cfg.RefreshToken = refresh;
-                _cfg.Save();
+                var result = await AuthManager.RefreshAsync(_cfg.RefreshToken);
+                if (result.HasValue)
+                {
+                    var (access, refresh) = result.Value;
+                    _token        = access;
+                    _cfg.DlAccess = access;
+                    if (refresh != null) _cfg.RefreshToken = refresh;
+                    _cfg.Save();
+                    SetBadge("Pro ✓"); SetStatus(Loc.StatusReady); return;
+                }
+            }
+
+            // 3. Cached access token
+            if (!force && !string.IsNullOrEmpty(_cfg.DlAccess) && !DeepLApi.IsTokenExpired(_cfg.DlAccess))
+            {
+                _token = _cfg.DlAccess;
                 SetBadge("Pro ✓"); SetStatus(Loc.StatusReady); return;
             }
-        }
 
-        // 3. dl_access cookie from browser (works without OIDC tokens)
-        var all = await Task.Run(CookieExtractor.ExtractAll);
-        if (all != null && all.TryGetValue("dl_access", out var bTok) && !DeepLApi.IsTokenExpired(bTok))
+            _token = null;
+            SetBadge("");
+            SetStatus(Loc.StatusNotAuth);
+        }
+        catch (Exception)
         {
-            _cookies      = all;
-            _cfg.DlAccess = bTok;
-            _cfg.Save();
-            SetBadge("Pro ✓"); SetStatus(Loc.StatusReady); return;
+            // Offline or DeepL had a server error. Keep whatever login we have and try again later.
+            _token ??= _cfg.DlAccess;
+            SetStatus(Loc.StatusOffline);
         }
-
-        // 4. Cached access token
-        if (!string.IsNullOrEmpty(_cfg.DlAccess) && !DeepLApi.IsTokenExpired(_cfg.DlAccess))
+        finally
         {
-            _cookies = new Dictionary<string, string> { ["dl_access"] = _cfg.DlAccess };
-            SetBadge("Pro ✓"); SetStatus(Loc.StatusReady); return;
+            _refreshLock.Release();
         }
+    }
 
-        _cookies = null;
-        SetBadge("");
-        SetStatus(Loc.StatusNotAuth);
+    void OnNetworkReset()
+    {
+        // Windows reports several changes while a network switch settles, so wait a moment
+        // and then retry what failed, using fresh connections.
+        if (!_failed) return;
+        _retry.Stop();
+        _retry.Interval = TimeSpan.FromSeconds(1.5);
+        _retry.Start();
     }
 
     // ──────────────────────────────── Translation ────────────────────────────────────
@@ -142,7 +173,8 @@ public partial class MainWindow : Window
     async Task TranslateAsync()
     {
         var src = SrcBox.Text.Trim();
-        if (src.Length < 3 || src == _lastSrc) return;
+        if (src.Length < 3) return;
+        if (src == _lastSrc && !_failed) return;
         _lastSrc = src;
 
         _cts.Cancel();
@@ -155,15 +187,54 @@ public partial class MainWindow : Window
         SetStatus(Loc.StatusTranslating);
         try
         {
-            var (text, detected) = await DeepLApi.TranslateAsync(
-                src, tgtLang, srcLang, _cookies, _nextGen, ct);
+            (string Text, string? Detected) result;
+            try
+            {
+                result = await DeepLApi.TranslateAsync(src, tgtLang, srcLang, _token, _nextGen, ct);
+            }
+            catch (AuthExpiredException)
+            {
+                // The token ran out between refresh checks. Renew it once and try again.
+                await RefreshTokenAsync(force: true);
+                ct.ThrowIfCancellationRequested();
+                if (_token == null) { _failed = false; return; }   // status already says "not logged in"
+                result = await DeepLApi.TranslateAsync(src, tgtLang, srcLang, _token, _nextGen, ct);
+            }
             ct.ThrowIfCancellationRequested();
-            TgtBox.Text = text;
-            SetStatus(Loc.StatusTranslated(detected));
+
+            // The text is already in the target language, so switch the target the way the
+            // official app does and translate again. The dropdown shows the new target.
+            if (srcLang == "auto" && DeepLApi.AutoTarget(result.Detected, tgtLang) is { } newTgt)
+            {
+                _autoSwitching = true;
+                try   { TgtCombo.SelectedItem = DeepLApi.TgtLangs.First(kv => kv.Value == newTgt).Key; }
+                finally { _autoSwitching = false; }
+                _cfg.TgtLang = newTgt;
+                _cfg.Save();
+                result = await DeepLApi.TranslateAsync(src, newTgt, srcLang, _token, _nextGen, ct);
+                ct.ThrowIfCancellationRequested();
+            }
+
+            TgtBox.Text = result.Text;
+            _failed = false;
+            _retry.Stop();
+            SetStatus(Loc.StatusTranslated(result.Detected));
         }
         catch (OperationCanceledException) { }
+        catch (OfflineException)
+        {
+            if (ct.IsCancellationRequested) return;
+            _failed = true;
+            if (!_retry.IsEnabled) _retry.Start();
+            SetStatus(Loc.StatusOffline);
+        }
         catch (Exception ex)
         {
+            if (ct.IsCancellationRequested) return;
+            // Not a network problem, so retrying the same text would fail the same way.
+            // Clearing _lastSrc lets Ctrl+Enter or the next edit try again.
+            _failed  = false;
+            _lastSrc = "";
             SetStatus(Loc.StatusError + ex.Message);
         }
     }
@@ -190,6 +261,7 @@ public partial class MainWindow : Window
 
     void Lang_Changed(object s, SelectionChangedEventArgs e)
     {
+        if (_autoSwitching) return;
         if (SrcCombo.SelectedItem is null || TgtCombo.SelectedItem is null) return;
         _cfg.SrcLang = DeepLApi.SrcLangs[(string)SrcCombo.SelectedItem];
         _cfg.TgtLang = DeepLApi.TgtLangs[(string)TgtCombo.SelectedItem];
@@ -246,7 +318,7 @@ public partial class MainWindow : Window
     void Verbindung_Click(object s, RoutedEventArgs e)
     {
         // Update which auth items are visible before opening
-        bool loggedIn = _cookies != null;
+        bool loggedIn = _token != null;
         MenuItemLogin.Visibility  = loggedIn ? Visibility.Collapsed : Visibility.Visible;
         MenuItemSwitch.Visibility = loggedIn ? Visibility.Visible   : Visibility.Collapsed;
         MenuItemLogout.Visibility = loggedIn ? Visibility.Visible   : Visibility.Collapsed;
@@ -262,10 +334,9 @@ public partial class MainWindow : Window
 
     void Logout_Click(object s, RoutedEventArgs e)
     {
-        _cookies           = null;
+        _token             = null;
         _cfg.DlAccess      = null;
         _cfg.RefreshToken  = null;
-        _cfg.IdentityToken = null;
         _cfg.Save();
         SetBadge("");
         SetStatus(Loc.StatusLoggedOut);
@@ -289,17 +360,46 @@ public partial class MainWindow : Window
     async Task DoLoginAsync()
     {
         SetStatus(Loc.StatusBrowser);
-        var result = await AuthManager.LoginAsync();
+
+        // Some browsers never start the app from DeepL's "App öffnen" page. As a way around
+        // that, the user can copy the page's address, and the login picks it up from the
+        // clipboard. AuthManager only accepts it when its state matches this login.
+        var clipWatch = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        clipWatch.Tick += (_, _) =>
+        {
+            string text;
+            try { text = Clipboard.GetText().Trim(); }
+            catch (Exception) { return; }   // another program holds the clipboard right now
+            if (!text.Contains("code=", StringComparison.Ordinal) || !AuthManager.HandleCallback(text))
+                return;
+            // The address holds a one-time login code, so it should not stay in the clipboard.
+            try { Clipboard.Clear(); } catch (Exception) { }
+        };
+        clipWatch.Start();
+
+        (string Access, string? Refresh, string? Identity)? result;
+        try
+        {
+            result = await AuthManager.LoginAsync();
+        }
+        catch (Exception)
+        {
+            SetStatus(Loc.StatusOffline);
+            return;
+        }
+        finally
+        {
+            clipWatch.Stop();
+        }
         if (!result.HasValue)
         {
             SetStatus(Loc.StatusCancelled);
             return;
         }
-        var (access, refresh, identity) = result.Value;
-        _cookies           = new Dictionary<string, string> { ["dl_access"] = access };
+        var (access, refresh, _) = result.Value;
+        _token             = access;
         _cfg.DlAccess      = access;
         _cfg.RefreshToken  = refresh;
-        _cfg.IdentityToken = identity;
         _cfg.Save();
         SetBadge("Pro ✓");
         SetStatus(Loc.StatusLoggedIn);
@@ -334,6 +434,7 @@ public partial class MainWindow : Window
     void OnClosing(object? s, System.ComponentModel.CancelEventArgs e)
     {
         e.Cancel = true;
+        SaveSettings();
         Hide();
     }
 
@@ -359,11 +460,14 @@ public partial class MainWindow : Window
 
     void SetStatus(string text) => StatusText.Text = text;
 
-    void SaveGeometry()
+    // Moving or resizing only updates the setting in memory. It is written to disk when the
+    // window is hidden or the app exits, instead of on every pixel of a drag.
+    void RememberGeometry()
     {
-        // Left/Top are -32000 while minimized — WPF WindowState update lags
+        // Left/Top are -32000 while minimized because the WPF WindowState update lags.
         if (WindowState != WindowState.Normal || Left < -10000 || Top < -10000) return;
         _cfg.Geometry = $"{Left:F0},{Top:F0},{Width:F0},{Height:F0}";
-        _cfg.Save();
     }
+
+    public void SaveSettings() => _cfg.Save();
 }
