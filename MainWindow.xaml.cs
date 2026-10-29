@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     bool                      _nextGen;
     string                    _lastSrc = "";
     bool                      _failed;          // last translation could not reach DeepL
+    bool                      _autoSwitching;   // the app itself is changing the target language
     readonly SemaphoreSlim    _refreshLock = new(1, 1);
 
     // ── Auto-refresh and offline-retry timers ──
@@ -200,6 +201,20 @@ public partial class MainWindow : Window
                 result = await DeepLApi.TranslateAsync(src, tgtLang, srcLang, _token, _nextGen, ct);
             }
             ct.ThrowIfCancellationRequested();
+
+            // The text is already in the target language, so switch the target the way the
+            // official app does and translate again. The dropdown shows the new target.
+            if (srcLang == "auto" && DeepLApi.AutoTarget(result.Detected, tgtLang) is { } newTgt)
+            {
+                _autoSwitching = true;
+                try   { TgtCombo.SelectedItem = DeepLApi.TgtLangs.First(kv => kv.Value == newTgt).Key; }
+                finally { _autoSwitching = false; }
+                _cfg.TgtLang = newTgt;
+                _cfg.Save();
+                result = await DeepLApi.TranslateAsync(src, newTgt, srcLang, _token, _nextGen, ct);
+                ct.ThrowIfCancellationRequested();
+            }
+
             TgtBox.Text = result.Text;
             _failed = false;
             _retry.Stop();
@@ -246,6 +261,7 @@ public partial class MainWindow : Window
 
     void Lang_Changed(object s, SelectionChangedEventArgs e)
     {
+        if (_autoSwitching) return;
         if (SrcCombo.SelectedItem is null || TgtCombo.SelectedItem is null) return;
         _cfg.SrcLang = DeepLApi.SrcLangs[(string)SrcCombo.SelectedItem];
         _cfg.TgtLang = DeepLApi.TgtLangs[(string)TgtCombo.SelectedItem];

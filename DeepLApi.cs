@@ -111,6 +111,20 @@ public static class DeepLApi
         return (first.Text, first.DetectedSourceLanguage);
     }
 
+    /// <summary>
+    /// Returns the target to switch to when DeepL detected that the text is already in the
+    /// target language: German goes to English (US), every other language to German.
+    /// Returns null when the target can stay.
+    /// </summary>
+    public static string? AutoTarget(string? detectedLang, string tgtLang)
+    {
+        if (string.IsNullOrEmpty(detectedLang)) return null;
+        var detected = detectedLang.Split('-')[0];
+        var target   = tgtLang.Split('-')[0];
+        if (!detected.Equals(target, StringComparison.OrdinalIgnoreCase)) return null;
+        return detected.Equals("de", StringComparison.OrdinalIgnoreCase) ? "en-US" : "de";
+    }
+
     public static bool IsTokenExpired(string token)
     {
         try
