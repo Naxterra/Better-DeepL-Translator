@@ -81,14 +81,13 @@ public static class AuthManager
     // ── Named pipe callback (from second instance launched by OS) ────────────────
 
     /// <summary>
-    /// Passes a deepl:// link to the waiting login. Links whose state does not match the login
-    /// that is running are ignored, because any local program can send one through the pipe.
+    /// Passes a deepl:// link, or the address of DeepL's redirect page, to the waiting login.
+    /// Links whose state does not match the login that is running are ignored, because any
+    /// local program can send one through the pipe or put one on the clipboard.
+    /// Returns true when the link was accepted.
     /// </summary>
-    public static void HandleCallback(string url)
-    {
-        if (IsCallbackFor(url, _expectedState))
-            _callbackTcs?.TrySetResult(url);
-    }
+    public static bool HandleCallback(string url) =>
+        IsCallbackFor(url, _expectedState) && (_callbackTcs?.TrySetResult(url) ?? false);
 
     internal static bool IsCallbackFor(string url, string? expectedState)
     {

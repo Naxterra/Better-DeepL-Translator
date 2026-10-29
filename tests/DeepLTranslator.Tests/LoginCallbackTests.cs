@@ -9,6 +9,13 @@ public class LoginCallbackTests
     }
 
     [Fact]
+    public void copied_browser_address_with_matching_state_accepted()
+    {
+        Assert.True(AuthManager.IsCallbackFor(
+            "https://www.deepl.com/de/redirect?code=abc&state=s3cret&iss=https%3A%2F%2Fauth.deepl.com", "s3cret"));
+    }
+
+    [Fact]
     public void login_callback_with_wrong_state_ignored()
     {
         Assert.False(AuthManager.IsCallbackFor("deepl://app/?code=abc&state=other", "s3cret"));

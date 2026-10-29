@@ -23,7 +23,8 @@ public static class Loc
     public static string BtnCopy         => En ? "📋 Copy"                                 : "📋 Kopieren";
     public static string StatusReady     => En ? "Ready"                                   : "Bereit";
     public static string StatusChecking  => En ? "Checking login…"                         : "Anmeldung wird geprüft…";
-    public static string StatusBrowser   => En ? "Opening browser…"                        : "Browser wird geöffnet…";
+    public static string StatusBrowser   => En ? "Log in in the browser, then click \"Open app\". If nothing happens, copy the page address from the address bar."
+                                               : "Im Browser anmelden, dann „App öffnen“ klicken. Passiert nichts, die Adresse aus der Adressleiste kopieren.";
     public static string StatusLoggedIn  => En ? "Logged in."                              : "Angemeldet.";
     public static string StatusLoggedOut => En ? "Logged out."                             : "Abgemeldet.";
     public static string StatusCancelled => En ? "Login cancelled or failed."              : "Anmeldung abgebrochen oder fehlgeschlagen.";

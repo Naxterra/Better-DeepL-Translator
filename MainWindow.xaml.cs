@@ -344,6 +344,23 @@ public partial class MainWindow : Window
     async Task DoLoginAsync()
     {
         SetStatus(Loc.StatusBrowser);
+
+        // Some browsers never start the app from DeepL's "App öffnen" page. As a way around
+        // that, the user can copy the page's address, and the login picks it up from the
+        // clipboard. AuthManager only accepts it when its state matches this login.
+        var clipWatch = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        clipWatch.Tick += (_, _) =>
+        {
+            string text;
+            try { text = Clipboard.GetText().Trim(); }
+            catch (Exception) { return; }   // another program holds the clipboard right now
+            if (!text.Contains("code=", StringComparison.Ordinal) || !AuthManager.HandleCallback(text))
+                return;
+            // The address holds a one-time login code, so it should not stay in the clipboard.
+            try { Clipboard.Clear(); } catch (Exception) { }
+        };
+        clipWatch.Start();
+
         (string Access, string? Refresh, string? Identity)? result;
         try
         {
@@ -353,6 +370,10 @@ public partial class MainWindow : Window
         {
             SetStatus(Loc.StatusOffline);
             return;
+        }
+        finally
+        {
+            clipWatch.Stop();
         }
         if (!result.HasValue)
         {
