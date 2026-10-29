@@ -17,3 +17,4 @@ Draft, waiting for the owner's approval. Each item names the tests that cover it
 | 11 | send the user's text anywhere other than DeepL. | No test yet. |
 | 12 | swallow key presses or break Ctrl+C in other programs through the Ctrl+C+C keyboard hook. | No test yet. |
 | 13 | leave the "Start with Windows" entry behind after it was switched off. | No test yet. The app has no installer, so there is no uninstall step to check. |
+| 14 | accept a login link that does not belong to the login it started, for example one sent by another program. | `LoginCallbackTests::login_callback_with_wrong_state_ignored`, `LoginCallbackTests::login_callback_without_running_login_ignored`, `LoginCallbackTests::malformed_login_callback_ignored_without_crash` |

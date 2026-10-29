@@ -39,7 +39,8 @@ public static class AuthManager
         var ourExe      = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule!.FileName;
         var callbackTcs = new TaskCompletionSource<string?>();
 
-        _callbackTcs = callbackTcs;
+        _callbackTcs   = callbackTcs;
+        _expectedState = state;
         Scheme.Take(ourExe);
         try
         {
@@ -71,17 +72,36 @@ public static class AuthManager
         }
         finally
         {
-            _callbackTcs = null;
+            _callbackTcs   = null;
+            _expectedState = null;
             Scheme.RestoreLeftover();
         }
     }
 
     // ── Named pipe callback (from second instance launched by OS) ────────────────
 
+    /// <summary>
+    /// Passes a deepl:// link to the waiting login. Links whose state does not match the login
+    /// that is running are ignored, because any local program can send one through the pipe.
+    /// </summary>
     public static void HandleCallback(string url)
-        => _callbackTcs?.TrySetResult(url);
+    {
+        if (IsCallbackFor(url, _expectedState))
+            _callbackTcs?.TrySetResult(url);
+    }
+
+    internal static bool IsCallbackFor(string url, string? expectedState)
+    {
+        if (string.IsNullOrEmpty(expectedState)) return false;
+        try
+        {
+            return ParseQuery(new Uri(url).Query, "state") == expectedState;
+        }
+        catch (UriFormatException) { return false; }
+    }
 
     static TaskCompletionSource<string?>? _callbackTcs;
+    static string? _expectedState;
 
     // ── Silent refresh via stored refresh token ───────────────────────────────────
 
