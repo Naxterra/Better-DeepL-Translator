@@ -16,5 +16,6 @@ Draft, waiting for the owner's approval. Each item names the tests that cover it
 | 10 | read browser cookies, saved passwords or other programs' data. | No test. The code that did this was removed in 1.1.0. |
 | 11 | send the user's text anywhere other than DeepL. | No test yet. |
 | 12 | swallow key presses or break Ctrl+C in other programs through the Ctrl+C+C keyboard hook. | No test yet. |
-| 13 | leave the "Start with Windows" entry behind after it was switched off. | No test yet. The app has no installer, so there is no uninstall step to check. |
+| 13 | leave the "Start with Windows" entry behind after it was switched off. | `StartupTests::start_with_windows_switched_off_removes_entry_and_keeps_other_programs`, `StartupTests::start_with_windows_switched_off_when_never_on_changes_nothing` |
+| 15 | leave its files, its "Start with Windows" entry or a login's deepl:// handler behind after it was uninstalled, or delete the user's settings without asking. | No automated test. The uninstaller runs the app with `--uninstall-cleanup`, which uses the code covered by items 4, 5 and 13. |
 | 14 | accept a login link that does not belong to the login it started, for example one sent by another program. | `LoginCallbackTests::login_callback_with_wrong_state_ignored`, `LoginCallbackTests::login_callback_without_running_login_ignored`, `LoginCallbackTests::malformed_login_callback_ignored_without_crash` |

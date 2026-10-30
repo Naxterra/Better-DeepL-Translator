@@ -34,6 +34,16 @@ public partial class App : Application
             return;
         }
 
+        // The uninstaller runs the app once with this switch, so that nothing the app wrote to
+        // the registry outlives it: the "Start with Windows" entry and a login's deepl:// handler.
+        if (e.Args.Length > 0 && e.Args[0] == "--uninstall-cleanup")
+        {
+            AuthManager.RestoreLeftoverSchemeHandler();
+            StartupHelper.SetEnabled(false);
+            Shutdown();
+            return;
+        }
+
         // Single instance guard
         _mutex = new Mutex(true, "DeepL-Translator-7F3A", out bool first);
         if (!first) { Shutdown(); return; }

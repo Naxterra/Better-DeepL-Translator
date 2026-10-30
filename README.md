@@ -27,9 +27,11 @@ A lightweight Windows desktop app that brings your **DeepL Pro** subscription to
 
 ## Installation
 
-1. Download `Better DeepL Translator.exe` from the [latest release](https://github.com/Naxterra/Better-DeepL-Translator/releases/latest)
-2. Run it — no installer, no admin rights needed
-3. Click **⚙ Verbindung → Anmelden** to authenticate (opens browser OAuth flow)
+1. Download `BetterDeepLTranslator-<version>-setup.exe` from the [latest release](https://github.com/Naxterra/Better-DeepL-Translator/releases/latest).
+2. Run it. It installs for your Windows user only, into `%LOCALAPPDATA%\Programs\Better DeepL Translator`, so no administrator rights are needed. It adds a Start menu entry and, if you choose, a desktop shortcut.
+3. Click **⚙ Verbindung → Anmelden** to sign in. This opens the DeepL login in your browser.
+
+To uninstall, use **Settings → Apps → Installed apps**. The uninstaller removes the "Start with Windows" entry and asks whether to delete your settings and the saved login as well.
 
 After the first login the session is cached; subsequent launches connect automatically.
 
@@ -54,6 +56,8 @@ dotnet publish DeepLTranslator.csproj -c Release -r win-x64 --no-self-contained 
 ```
 
 Run the tests with `dotnet test`. Building requires the .NET 11 SDK.
+
+To build the installer, run `installer\build.ps1` in PowerShell. It needs Inno Setup 7 (`winget install JRSoftware.InnoSetup.7`) and writes the setup file to `artifacts\installer`.
 
 ## Disclaimer
 
