@@ -1,9 +1,7 @@
-﻿using System.Runtime.InteropServices;
-using System.Threading;
+﻿using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Threading;
 using Clipboard    = System.Windows.Clipboard;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -12,11 +10,6 @@ namespace NaxDeepL;
 
 public partial class MainWindow : Window
 {
-    // ── DWM dark title bar ──
-    [DllImport("dwmapi.dll")]
-    static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int val, int sz);
-    const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
-
     // ── State ──
     readonly Config           _cfg  = Config.Load();
     readonly DispatcherTimer  _debounce;
@@ -95,13 +88,15 @@ public partial class MainWindow : Window
 
     // ──────────────────────────────────── Startup ────────────────────────────────────
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        // Before the window is first shown, so it never flashes the solid background.
+        TitleBar.Apply(this);
+    }
+
     async void OnLoaded(object s, RoutedEventArgs e)
     {
-        // Dark title bar (Windows 11)
-        var hwnd  = new WindowInteropHelper(this).Handle;
-        var value = 1;
-        DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref value, sizeof(int));
-
         await RefreshTokenAsync();
     }
 
@@ -325,7 +320,12 @@ public partial class MainWindow : Window
 
         var cm = VerbindungBtn.ContextMenu;
         cm.PlacementTarget = VerbindungBtn;
-        cm.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        // Below the button with the right edges aligned, so the menu stays inside the window.
+        // The 10 is the room the menu template leaves on its right for the shadow.
+        cm.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
+        cm.CustomPopupPlacementCallback = (popup, target, _) =>
+            [new(new System.Windows.Point(target.Width - popup.Width + 10, target.Height + 4),
+                 System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal)];
         cm.IsOpen = true;
     }
 
@@ -443,9 +443,9 @@ public partial class MainWindow : Window
     void ApplyLocalization()
     {
         TitleText.Text          = Loc.AppTitle;
-        VerbindungBtn.Content   = Loc.BtnConnect;
-        ClearBtn.Content        = Loc.BtnClear;
-        CopyBtn.Content         = Loc.BtnCopy;
+        ConnectLabel.Text       = Loc.BtnConnect;
+        ClearLabel.Text         = Loc.BtnClear;
+        CopyLabel.Text          = Loc.BtnCopy;
         MenuItemLogin.Header    = Loc.MenuLogin;
         MenuItemSwitch.Header   = Loc.MenuSwitch;
         MenuItemLogout.Header   = Loc.MenuLogout;
@@ -456,7 +456,11 @@ public partial class MainWindow : Window
 
     // ──────────────────────────── Helpers ────────────────────────────────────────────
 
-    void SetBadge(string text) => Badge.Text = text;
+    void SetBadge(string text)
+    {
+        Badge.Text           = text;
+        BadgePill.Visibility = text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     void SetStatus(string text) => StatusText.Text = text;
 
