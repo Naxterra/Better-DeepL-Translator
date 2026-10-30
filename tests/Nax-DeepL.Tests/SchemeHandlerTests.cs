@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace DeepLTranslator.Tests;
+namespace NaxDeepL.Tests;
 
 /// <summary>
 /// Runs the deepl:// handler guard against a throw-away key under HKCU, never against the real
@@ -8,7 +8,7 @@ namespace DeepLTranslator.Tests;
 /// </summary>
 public sealed class SchemeHandlerTests : IDisposable
 {
-    readonly string _base = $@"Software\DeepLTranslator.Tests\{Guid.NewGuid():N}";
+    readonly string _base = $@"Software\NaxDeepL.Tests\{Guid.NewGuid():N}";
     string Scheme  => $@"{_base}\Classes\deepl";
     string Command => $@"{Scheme}\shell\open\command";
     string Backup  => $@"{_base}\App\LoginBackup";
@@ -18,9 +18,9 @@ public sealed class SchemeHandlerTests : IDisposable
     public void Dispose()
     {
         Registry.CurrentUser.DeleteSubKeyTree(_base, throwOnMissingSubKey: false);
-        using var parent = Registry.CurrentUser.OpenSubKey(@"Software\DeepLTranslator.Tests");
+        using var parent = Registry.CurrentUser.OpenSubKey(@"Software\NaxDeepL.Tests");
         if (parent is { SubKeyCount: 0, ValueCount: 0 })
-            Registry.CurrentUser.DeleteSubKey(@"Software\DeepLTranslator.Tests", throwOnMissingSubKey: false);
+            Registry.CurrentUser.DeleteSubKey(@"Software\NaxDeepL.Tests", throwOnMissingSubKey: false);
     }
 
     bool Exists(string path)

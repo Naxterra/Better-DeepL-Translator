@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http;
 
-namespace DeepLTranslator.Tests;
+namespace NaxDeepL.Tests;
 
 /// <summary>An HTTP handler whose behaviour each test supplies as a function.</summary>
 sealed class FakeHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send)

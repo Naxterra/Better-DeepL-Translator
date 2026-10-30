@@ -1,10 +1,10 @@
 using System.IO;
 
-namespace DeepLTranslator.Tests;
+namespace NaxDeepL.Tests;
 
 public sealed class ConfigTests : IDisposable
 {
-    readonly string _dir  = Path.Combine(Path.GetTempPath(), "DeepLTranslator.Tests", Guid.NewGuid().ToString("N"));
+    readonly string _dir  = Path.Combine(Path.GetTempPath(), "NaxDeepL.Tests", Guid.NewGuid().ToString("N"));
     string ConfigPath => Path.Combine(_dir, "config.json");
 
     public void Dispose()
@@ -91,5 +91,41 @@ public sealed class ConfigTests : IDisposable
 
         Assert.Equal("de", cfg.TgtLang);
         Assert.Null(cfg.RefreshToken);
+    }
+
+    [Fact]
+    public void settings_of_old_app_name_moved_with_login_intact()
+    {
+        var oldDir = Path.Combine(_dir, "DeepL-Translator");
+        var newDir = Path.Combine(_dir, "Nax-DeepL");
+        var old = Config.Load(Path.Combine(oldDir, "config.json"));
+        old.RefreshToken = "refresh-secret-456";
+        old.TgtLang = "tr";
+        old.Save();
+
+        Config.MoveLegacyFolder(oldDir, newDir);
+
+        Assert.False(Directory.Exists(oldDir));
+        var moved = Config.Load(Path.Combine(newDir, "config.json"));
+        Assert.Equal("refresh-secret-456", moved.RefreshToken);
+        Assert.Equal("tr", moved.TgtLang);
+    }
+
+    [Fact]
+    public void settings_of_old_app_name_never_replace_existing_new_settings()
+    {
+        var oldDir = Path.Combine(_dir, "DeepL-Translator");
+        var newDir = Path.Combine(_dir, "Nax-DeepL");
+        var old = Config.Load(Path.Combine(oldDir, "config.json"));
+        old.TgtLang = "tr";
+        old.Save();
+        var current = Config.Load(Path.Combine(newDir, "config.json"));
+        current.TgtLang = "en-US";
+        current.Save();
+
+        Config.MoveLegacyFolder(oldDir, newDir);
+
+        Assert.True(Directory.Exists(oldDir));
+        Assert.Equal("en-US", Config.Load(Path.Combine(newDir, "config.json")).TgtLang);
     }
 }

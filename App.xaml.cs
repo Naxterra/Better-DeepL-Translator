@@ -5,11 +5,11 @@ using System.Windows;
 using Application = System.Windows.Application;
 using Forms = System.Windows.Forms;
 
-namespace DeepLTranslator;
+namespace NaxDeepL;
 
 public partial class App : Application
 {
-    const string PipeName = "DeepL-Translator-Auth";
+    const string PipeName = "Nax-DeepL-Auth";
 
     static Mutex?              _mutex;
     internal Forms.NotifyIcon? TrayIcon;
@@ -34,14 +34,27 @@ public partial class App : Application
             return;
         }
 
+        // The uninstaller runs the app once with this switch, so that nothing the app wrote to
+        // the registry outlives it: the "Start with Windows" entry and a login's deepl:// handler.
+        if (e.Args.Length > 0 && e.Args[0] == "--uninstall-cleanup")
+        {
+            AuthManager.RestoreLeftoverSchemeHandler();
+            StartupHelper.SetEnabled(false);
+            Shutdown();
+            return;
+        }
+
         // Single instance guard
-        _mutex = new Mutex(true, "DeepL-Translator-7F3A", out bool first);
+        _mutex = new Mutex(true, "Nax-DeepL-7F3A", out bool first);
         if (!first) { Shutdown(); return; }
 
         // Undo the deepl:// handler change of a login that a crash cut short, then start
         // replacing dead connections whenever Windows reports a network change.
         AuthManager.RestoreLeftoverSchemeHandler();
         Net.WatchNetworkChanges();
+
+        // A "Start with Windows" entry from before the rename points at the old program file.
+        try { StartupHelper.MoveLegacyEntry(); } catch { }
 
         // Listen for OAuth callbacks from second instances
         _ = Task.Run(ListenForCallbacks);
@@ -51,12 +64,12 @@ public partial class App : Application
         // Tray icon
         TrayIcon = new Forms.NotifyIcon
         {
-            Text    = "Better DeepL Übersetzer",
+            Text    = Loc.AppTitle,
             Icon    = LoadIcon(),
             Visible = true,
         };
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("Better DeepL Übersetzer", null, (_, _) => ShowMain());
+        menu.Items.Add(Loc.AppTitle,              null, (_, _) => ShowMain());
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("Beenden",           null, (_, _) => ExitApp());
         TrayIcon.ContextMenuStrip  = menu;

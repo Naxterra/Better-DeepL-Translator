@@ -1,4 +1,4 @@
-﻿<Application x:Class="DeepLTranslator.App"
+﻿<Application x:Class="NaxDeepL.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- StartupUri omitted — startup handled in App.xaml.cs -->

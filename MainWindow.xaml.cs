@@ -8,7 +8,7 @@ using System.Windows.Threading;
 using Clipboard    = System.Windows.Clipboard;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
-namespace DeepLTranslator;
+namespace NaxDeepL;
 
 public partial class MainWindow : Window
 {
@@ -351,7 +351,7 @@ public partial class MainWindow : Window
     {
         var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0";
         System.Windows.MessageBox.Show(
-            $"Better DeepL Translator\nVersion {ver}\n\nAuthor: Naxterra\nhttps://github.com/Naxterra/Better-DeepL-Translator",
+            $"{Loc.AppTitle}\nVersion {ver}\n\n{Loc.AboutBlurb}\n\n{Loc.AboutAuthor}: Naxterra\nhttps://github.com/Naxterra/Nax-DeepL",
             Loc.MenuAbout,
             MessageBoxButton.OK,
             MessageBoxImage.None);

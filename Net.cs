@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 
-namespace DeepLTranslator;
+namespace NaxDeepL;
 
 /// <summary>Thrown when DeepL could not be reached after all retries.</summary>
 public sealed class OfflineException(string message, Exception? inner = null) : Exception(message, inner);
