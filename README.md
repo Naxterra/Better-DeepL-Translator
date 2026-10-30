@@ -4,7 +4,7 @@ Nax-DeepL is a fast, lightweight Windows desktop translator for your **DeepL Pro
 
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-11-purple)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![License: Nax Source-Available](https://img.shields.io/badge/license-Nax%20Source--Available-blue.svg)](LICENSE)
 
 ## Features
 
@@ -68,3 +68,7 @@ This app uses DeepL's internal web API on behalf of your own authenticated DeepL
 ## Author
 
 **Naxterra**, [github.com/Naxterra](https://github.com/Naxterra)
+
+## License
+
+This software is under the Nax Source-Available License 1.0. You may install and use the official release builds, privately and at work, and you may read the source code. Modifying the software, redistributing it and selling it need the written permission of the owner. See [LICENSE](LICENSE).
