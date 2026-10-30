@@ -18,12 +18,12 @@ public static class Loc
     public static string AboutBlurb      => En ? "A fast DeepL Pro translator for Windows that keeps working when the network changes."
                                                : "Ein schneller DeepL-Pro-Übersetzer für Windows, der auch nach einem Netzwerkwechsel weiterarbeitet.";
     public static string AboutAuthor     => En ? "Author"                                  : "Autor";
-    public static string BtnConnect      => En ? "⚙ Connect"                               : "⚙ Verbindung";
+    public static string BtnConnect      => En ? "Connect"                                 : "Verbindung";
     public static string MenuLogin        => En ? "Login"                                   : "Anmelden";
     public static string MenuSwitch      => En ? "Switch Account"                          : "Konto wechseln";
     public static string MenuLogout      => En ? "Logout"                                  : "Abmelden";
-    public static string BtnClear        => En ? "✕ Clear"                                 : "✕ Löschen";
-    public static string BtnCopy         => En ? "📋 Copy"                                 : "📋 Kopieren";
+    public static string BtnClear        => En ? "Clear"                                   : "Löschen";
+    public static string BtnCopy         => En ? "Copy"                                    : "Kopieren";
     public static string StatusReady     => En ? "Ready"                                   : "Bereit";
     public static string StatusChecking  => En ? "Checking login…"                         : "Anmeldung wird geprüft…";
     public static string StatusBrowser   => En ? "Log in in the browser, then click \"Open app\". If nothing happens, copy the page address from the address bar."
