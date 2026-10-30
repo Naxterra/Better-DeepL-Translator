@@ -15,9 +15,6 @@
             <RowDefinition Height="32"/>   <!-- status line -->
         </Grid.RowDefinitions>
 
-        <!-- A soft blue to violet wash across the whole window, so it is not flat grey. -->
-        <Rectangle Grid.RowSpan="4" IsHitTestVisible="False" Fill="{StaticResource WindowWash}"/>
-
         <!-- ═══ Header ═══ -->
         <Grid Grid.Row="0" Margin="20,0,16,0">
             <Grid.ColumnDefinitions>

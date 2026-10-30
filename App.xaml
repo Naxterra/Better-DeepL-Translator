@@ -4,56 +4,18 @@
     <!-- StartupUri omitted — startup handled in App.xaml.cs -->
     <Application.Resources>
 
-        <!-- ── Colours (Windows 11 Fluent, dark) ──
-             The layer brushes are translucent so the Mica backdrop shows through them. -->
-        <SolidColorBrush x:Key="BgWindow"        Color="#202020"/>
-        <SolidColorBrush x:Key="CardStroke"      Color="#16FFFFFF"/>
-
-        <!-- The window wash and the cards use many closely spaced stops along an eased curve.
-             A gradient with only two or three stops bends visibly at each stop, which the eye
-             sees as rings or layers. Blue turning into violet also changes the colour channels
-             at different rates, which hides the 8-bit steps of such a faint gradient. -->
-        <LinearGradientBrush x:Key="WindowWash" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#2E60CDFF" Offset="0"/>
-            <GradientStop Color="#2A5EC6FF" Offset="0.1"/>
-            <GradientStop Color="#215AB4FF" Offset="0.2"/>
-            <GradientStop Color="#18589CFF" Offset="0.32"/>
-            <GradientStop Color="#105A86FF" Offset="0.45"/>
-            <GradientStop Color="#0A6274FF" Offset="0.58"/>
-            <GradientStop Color="#086C68FA" Offset="0.7"/>
-            <GradientStop Color="#0A7860F5" Offset="0.82"/>
-            <GradientStop Color="#0E8258F0" Offset="0.92"/>
-            <GradientStop Color="#108A55EC" Offset="1"/>
-        </LinearGradientBrush>
-
-        <!-- Cards fade from a faint sheen at the top to almost nothing at the bottom, so the
-             window wash runs through them instead of stopping at their edges. -->
-        <LinearGradientBrush x:Key="CardFill" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#10FFFFFF" Offset="0"/>
-            <GradientStop Color="#0CFFFFFF" Offset="0.25"/>
-            <GradientStop Color="#08FFFFFF" Offset="0.55"/>
-            <GradientStop Color="#05FFFFFF" Offset="0.8"/>
-            <GradientStop Color="#04FFFFFF" Offset="1"/>
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="CardFillAlt" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#0AFFFFFF" Offset="0"/>
-            <GradientStop Color="#07FFFFFF" Offset="0.3"/>
-            <GradientStop Color="#04FFFFFF" Offset="0.65"/>
-            <GradientStop Color="#02FFFFFF" Offset="1"/>
-        </LinearGradientBrush>
-
-        <!-- Card outline: light catches the top edge and fades out towards the bottom. -->
-        <LinearGradientBrush x:Key="CardEdge" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#24FFFFFF" Offset="0"/>
-            <GradientStop Color="#16FFFFFF" Offset="0.2"/>
-            <GradientStop Color="#0CFFFFFF" Offset="0.6"/>
-            <GradientStop Color="#08FFFFFF" Offset="1"/>
-        </LinearGradientBrush>
-        <SolidColorBrush x:Key="ControlFill"     Color="#0FFFFFFF"/>
-        <SolidColorBrush x:Key="ControlHover"    Color="#18FFFFFF"/>
-        <SolidColorBrush x:Key="ControlPressed"  Color="#08FFFFFF"/>
-        <SolidColorBrush x:Key="ControlStroke"   Color="#14FFFFFF"/>
-        <SolidColorBrush x:Key="FlyoutFill"      Color="#2C2C2C"/>
+        <!-- ── Colours (dark, made for OLED screens) ──
+             The window is true black and every surface is a solid colour. Large faint gradients
+             show visible steps near black on OLED panels, so colour comes only from the accent. -->
+        <SolidColorBrush x:Key="BgWindow"        Color="#000000"/>
+        <SolidColorBrush x:Key="CardFill"        Color="#0C0C0E"/>
+        <SolidColorBrush x:Key="CardFillAlt"     Color="#08080A"/>
+        <SolidColorBrush x:Key="CardStroke"      Color="#232328"/>
+        <SolidColorBrush x:Key="ControlFill"     Color="#141417"/>
+        <SolidColorBrush x:Key="ControlHover"    Color="#202025"/>
+        <SolidColorBrush x:Key="ControlPressed"  Color="#0E0E10"/>
+        <SolidColorBrush x:Key="ControlStroke"   Color="#2A2A30"/>
+        <SolidColorBrush x:Key="FlyoutFill"      Color="#16161A"/>
         <SolidColorBrush x:Key="Accent"          Color="#60CDFF"/>
         <SolidColorBrush x:Key="AccentHover"     Color="#E660CDFF"/>
         <SolidColorBrush x:Key="AccentPressed"   Color="#CC60CDFF"/>
@@ -195,7 +157,7 @@
         <!-- ── Cards around the two text areas ── -->
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background"      Value="{StaticResource CardFill}"/>
-            <Setter Property="BorderBrush"     Value="{StaticResource CardEdge}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource CardStroke}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius"    Value="10"/>
         </Style>

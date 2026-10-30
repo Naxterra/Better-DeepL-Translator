@@ -92,7 +92,7 @@ public partial class MainWindow : Window
     {
         base.OnSourceInitialized(e);
         // Before the window is first shown, so it never flashes the solid background.
-        if (Backdrop.Apply(this)) Background = System.Windows.Media.Brushes.Transparent;
+        TitleBar.Apply(this);
     }
 
     async void OnLoaded(object s, RoutedEventArgs e)
