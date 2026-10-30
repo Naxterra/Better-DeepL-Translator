@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace DeepLTranslator;
+namespace NaxDeepL;
 
 /// <summary>DeepL rejected the access token, so it has to be renewed before trying again.</summary>
 public sealed class AuthExpiredException() : Exception("DeepL rejected the login token.");

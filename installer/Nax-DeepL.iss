@@ -1,4 +1,4 @@
-﻿; Installer for Better DeepL Translator. Build it with installer\build.ps1, which publishes the app
+﻿; Installer for Nax-DeepL. Build it with installer\build.ps1, which publishes the app
 ; and passes AppVersion and PublishDir to the compiler.
 
 #ifndef AppVersion
@@ -8,8 +8,8 @@
   #error PublishDir is not defined. Build the installer with installer\build.ps1.
 #endif
 
-#define AppName "Better DeepL Translator"
-#define AppExe  "Better DeepL Translator.exe"
+#define AppName "Nax-DeepL"
+#define AppExe  "Nax-DeepL.exe"
 
 [Setup]
 ; The ID ties updates and the uninstall entry together. It must never change.
@@ -18,7 +18,7 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher=Naxterra
-AppPublisherURL=https://github.com/Naxterra/Better-DeepL-Translator
+AppPublisherURL=https://github.com/Naxterra/Nax-DeepL
 VersionInfoVersion={#AppVersion}
 ; Installs for the current user only, so no administrator rights are needed.
 PrivilegesRequired=lowest
@@ -28,7 +28,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ; Setup and the uninstaller wait until the running app is closed. The name matches the app's
 ; single-instance mutex.
-AppMutex=DeepL-Translator-7F3A
+AppMutex=Nax-DeepL-7F3A
 SetupIconFile=..\icon.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
@@ -36,7 +36,7 @@ WizardStyle=modern dynamic
 Compression=lzma2
 SolidCompression=yes
 OutputDir=..\artifacts\installer
-OutputBaseFilename=BetterDeepLTranslator-{#AppVersion}-setup
+OutputBaseFilename=Nax-DeepL-{#AppVersion}-setup
 
 [Languages]
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
@@ -85,8 +85,12 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   // Settings and the encrypted login are the user's data, so they are only deleted on request.
-  // A silent uninstall keeps them.
+  // A silent uninstall keeps them. The folder of the old app name is included in case the app
+  // was never started after the rename and so never moved it.
   if (CurUninstallStep = usPostUninstall) and
      (SuppressibleMsgBox(CustomMessage('DeleteSettings'), mbConfirmation, MB_YESNO, IDNO) = IDYES) then
+  begin
+    DelTree(ExpandConstant('{userappdata}\Nax-DeepL'), True, True, True);
     DelTree(ExpandConstant('{userappdata}\DeepL-Translator'), True, True, True);
+  end;
 end;

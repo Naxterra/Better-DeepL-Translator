@@ -8,8 +8,9 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>icon.ico</ApplicationIcon>
-    <AssemblyName>Better DeepL Translator</AssemblyName>
-    <Product>Better DeepL Translator</Product>
+    <RootNamespace>NaxDeepL</RootNamespace>
+    <AssemblyName>Nax-DeepL</AssemblyName>
+    <Product>Nax-DeepL</Product>
     <Description>DeepL Pro desktop client for Windows</Description>
     <Version>1.1.0</Version>
     <Optimize>true</Optimize>
@@ -23,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="DeepLTranslator.Tests" />
+    <InternalsVisibleTo Include="Nax-DeepL.Tests" />
   </ItemGroup>
 
   <ItemGroup>

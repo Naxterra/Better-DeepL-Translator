@@ -4,13 +4,16 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace DeepLTranslator;
+namespace NaxDeepL;
 
 public class Config
 {
-    static readonly string DefaultPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "DeepL-Translator", "config.json");
+    static readonly string AppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    static readonly string DefaultDir = Path.Combine(AppData, "Nax-DeepL");
+    static readonly string DefaultPath = Path.Combine(DefaultDir, "config.json");
+
+    // Versions up to 1.1.0 kept their settings in this folder. It is moved once to the new name.
+    static readonly string LegacyDir = Path.Combine(AppData, "DeepL-Translator");
 
     [JsonIgnore] string FilePath { get; set; } = DefaultPath;
 
@@ -42,6 +45,7 @@ public class Config
 
     public static Config Load(string? path = null)
     {
+        if (path == null) MoveLegacyFolder(LegacyDir, DefaultDir);
         path ??= DefaultPath;
         Config cfg;
         try
@@ -64,6 +68,21 @@ public class Config
             cfg.Save();   // rewrites the file without the plain-text tokens
         }
         return cfg;
+    }
+
+    /// <summary>
+    /// Moves the settings folder of an older version to the current name. Settings that already
+    /// exist under the current name are never replaced. If the move fails, the old folder stays
+    /// untouched and the app starts with default settings.
+    /// </summary>
+    internal static void MoveLegacyFolder(string legacyDir, string newDir)
+    {
+        try
+        {
+            if (Directory.Exists(legacyDir) && !Directory.Exists(newDir))
+                Directory.Move(legacyDir, newDir);
+        }
+        catch { }
     }
 
     /// <summary>
@@ -91,6 +110,8 @@ public class Config
         catch { }
     }
 
+    // This value keeps its old app name on purpose. Changing it would make every saved login
+    // unreadable.
     static readonly byte[] Entropy = "DeepL-Translator token v1"u8.ToArray();
 
     static string? Protect(string? plain) =>

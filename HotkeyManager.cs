@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using Application = System.Windows.Application;
 
-namespace DeepLTranslator;
+namespace NaxDeepL;
 
 /// <summary>Detects Ctrl+C+C (two Ctrl+C within 500 ms) via a low-level keyboard hook.</summary>
 public sealed class HotkeyManager : IDisposable

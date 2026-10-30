@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/tests/">
-    <Project Path="tests/DeepLTranslator.Tests/DeepLTranslator.Tests.csproj" />
+    <Project Path="tests/Nax-DeepL.Tests/Nax-DeepL.Tests.csproj" />
   </Folder>
-  <Project Path="DeepLTranslator.csproj" />
+  <Project Path="Nax-DeepL.csproj" />
 </Solution>

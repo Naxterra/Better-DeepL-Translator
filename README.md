@@ -1,6 +1,6 @@
-# Better DeepL Translator
+# Nax-DeepL
 
-A lightweight Windows desktop app that brings your **DeepL Pro** subscription to the desktop — no browser tab needed.
+Nax-DeepL is a fast, lightweight Windows desktop translator for your **DeepL Pro** subscription. It starts quickly, stays small in the tray and keeps working when your network changes.
 
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-11-purple)
@@ -8,16 +8,16 @@ A lightweight Windows desktop app that brings your **DeepL Pro** subscription to
 
 ## Features
 
-- **Instant translation** — type or paste and results appear automatically
-- **Global hotkey** `Ctrl+C+C` — copy any text anywhere and it opens translated
-- **Survives network switches**: when Windows switches networks (Wi-Fi, LAN, VPN), the app drops its old connections and retries on the new network instead of going blank
-- **Login once**: sign in with your DeepL Pro account in the browser. The session is renewed automatically and stored encrypted for your Windows user
-- **Classic & Next-gen engine** toggle per translation
-- **Language swap** — flip source and target with one click
-- **System tray** — minimizes to tray, always one click away
-- **Start with Windows** — optional autorun via registry
-- **DE / EN UI** — interface language toggle in the title bar
-- **Dark theme** throughout
+- **Instant translation:** type or paste, and the translation appears after a short pause.
+- **Global hotkey:** press `Ctrl+C+C` anywhere to translate the copied text.
+- **Survives network switches:** when Windows switches networks (Wi-Fi, LAN or VPN), the app drops its old connections and retries on the new network instead of going blank.
+- **Login once:** you sign in with your DeepL Pro account in the browser. The session is renewed automatically and stored encrypted for your Windows user.
+- **Automatic target language:** when the text is already in the target language, German switches to English (US) and every other language switches to German.
+- **Classic and Next-gen engine:** a toggle in the title bar picks the DeepL model.
+- **Language swap:** one click flips source and target.
+- **System tray:** the window hides to the tray and is one click away.
+- **Start with Windows:** an optional entry starts the app when you sign in to Windows.
+- **German and English interface** with a dark theme.
 
 ## Requirements
 
@@ -27,32 +27,34 @@ A lightweight Windows desktop app that brings your **DeepL Pro** subscription to
 
 ## Installation
 
-1. Download `BetterDeepLTranslator-<version>-setup.exe` from the [latest release](https://github.com/Naxterra/Better-DeepL-Translator/releases/latest).
-2. Run it. It installs for your Windows user only, into `%LOCALAPPDATA%\Programs\Better DeepL Translator`, so no administrator rights are needed. It adds a Start menu entry and, if you choose, a desktop shortcut.
+1. Download `Nax-DeepL-<version>-setup.exe` from the [latest release](https://github.com/Naxterra/Nax-DeepL/releases/latest).
+2. Run it. It installs for your Windows user only, into `%LOCALAPPDATA%\Programs\Nax-DeepL`, so no administrator rights are needed. It adds a Start menu entry and, if you choose, a desktop shortcut.
 3. Click **⚙ Verbindung → Anmelden** to sign in. This opens the DeepL login in your browser.
+
+After the first login the session is saved, and later starts connect automatically.
 
 To uninstall, use **Settings → Apps → Installed apps**. The uninstaller removes the "Start with Windows" entry and asks whether to delete your settings and the saved login as well.
 
-After the first login the session is cached; subsequent launches connect automatically.
+Settings from the earlier name "Better DeepL Translator" are taken over automatically on the first start, including the login.
 
 ## Usage
 
 | Action | How |
 |---|---|
-| Translate | Type in the left box — translation appears after a short pause |
+| Translate | Type in the left box. The translation appears after a short pause. |
 | Force translate | `Ctrl+Enter` |
-| Translate clipboard | Press `Ctrl+C+C` anywhere on the system |
-| Switch languages | Use the dropdowns or click ⇌ to swap |
-| Copy result | Click **📋 Kopieren / Copy** |
-| Switch engine | Classic ↔ Next-gen toggle in the title bar |
-| Logout / switch account | ⚙ Verbindung → Abmelden |
+| Translate clipboard | Press `Ctrl+C+C` anywhere on the system. |
+| Switch languages | Use the dropdowns or click ⇌ to swap. |
+| Copy result | Click **📋 Kopieren / Copy**. |
+| Switch engine | Use the Classic and Next-gen toggle in the title bar. |
+| Log out or switch account | ⚙ Verbindung → Abmelden |
 
 ## Building from source
 
 ```
-git clone https://github.com/Naxterra/Better-DeepL-Translator.git
-cd Better-DeepL-Translator
-dotnet publish DeepLTranslator.csproj -c Release -r win-x64 --no-self-contained -o dist
+git clone https://github.com/Naxterra/Nax-DeepL.git
+cd Nax-DeepL
+dotnet publish Nax-DeepL.csproj -c Release -r win-x64 --no-self-contained -o dist
 ```
 
 Run the tests with `dotnet test`. Building requires the .NET 11 SDK.
@@ -65,4 +67,4 @@ This app uses DeepL's internal web API on behalf of your own authenticated DeepL
 
 ## Author
 
-**Naxterra** — [github.com/Naxterra](https://github.com/Naxterra)
+**Naxterra**, [github.com/Naxterra](https://github.com/Naxterra)

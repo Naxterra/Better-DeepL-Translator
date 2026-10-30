@@ -1,4 +1,4 @@
-namespace DeepLTranslator;
+namespace NaxDeepL;
 
 public static class Loc
 {
@@ -14,7 +14,10 @@ public static class Loc
 
     static bool En => Current == "en";
 
-    public static string AppTitle        => En ? "Better DeepL Translator"                 : "Better DeepL Übersetzer";
+    public static string AppTitle        => "Nax-DeepL";
+    public static string AboutBlurb      => En ? "A fast DeepL Pro translator for Windows that keeps working when the network changes."
+                                               : "Ein schneller DeepL-Pro-Übersetzer für Windows, der auch nach einem Netzwerkwechsel weiterarbeitet.";
+    public static string AboutAuthor     => En ? "Author"                                  : "Autor";
     public static string BtnConnect      => En ? "⚙ Connect"                               : "⚙ Verbindung";
     public static string MenuLogin        => En ? "Login"                                   : "Anmelden";
     public static string MenuSwitch      => En ? "Switch Account"                          : "Konto wechseln";

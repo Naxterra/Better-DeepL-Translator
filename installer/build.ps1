@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root    = Split-Path $PSScriptRoot -Parent
-$project = Join-Path $root 'DeepLTranslator.csproj'
+$project = Join-Path $root 'Nax-DeepL.csproj'
 $publish = Join-Path $root 'artifacts\publish'
 
 if (-not (Test-Path $Iscc)) {
@@ -20,5 +20,5 @@ if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
 dotnet publish $project -c Release -r win-x64 --no-self-contained -o $publish
 if ($LASTEXITCODE) { throw 'dotnet publish failed.' }
 
-& $Iscc "/DAppVersion=$version" "/DPublishDir=$publish" (Join-Path $PSScriptRoot 'BetterDeepLTranslator.iss')
+& $Iscc "/DAppVersion=$version" "/DPublishDir=$publish" (Join-Path $PSScriptRoot 'Nax-DeepL.iss')
 if ($LASTEXITCODE) { throw 'The installer build failed.' }
