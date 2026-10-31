@@ -32,6 +32,9 @@ public static class Loc
     public static string StatusLoggedOut => En ? "Logged out."                             : "Abgemeldet.";
     public static string StatusCancelled => En ? "Login cancelled or failed."              : "Anmeldung abgebrochen oder fehlgeschlagen.";
     public static string StatusNotAuth   => En ? "Not logged in. Click ⚙ Connect."         : "Nicht angemeldet. Bitte ⚙ Verbindung klicken.";
+    public static string StatusCopied    => En ? "Copied."                                 : "Kopiert.";
+    public static string StatusClipboardBusy => En ? "The clipboard is in use by another program. Please try again."
+                                                   : "Die Zwischenablage wird von einem anderen Programm benutzt. Bitte noch einmal versuchen.";
     public static string StatusTranslating => En ? "Translating…"                          : "Übersetze…";
     public static string StatusError     => En ? "Error: "                                 : "Fehler: ";
     public static string StatusOffline   => En ? "No connection to DeepL. Retrying automatically…"

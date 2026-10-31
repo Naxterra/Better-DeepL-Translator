@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     string?                   _token;
     bool                      _nextGen;
     string                    _lastSrc = "";
+    string?                   _detected;        // language DeepL detected in the shown translation
     bool                      _failed;          // last translation could not reach DeepL
     bool                      _autoSwitching;   // the app itself is changing the target language
     readonly SemaphoreSlim    _refreshLock = new(1, 1);
@@ -211,6 +212,7 @@ public partial class MainWindow : Window
             }
 
             TgtBox.Text = result.Text;
+            _detected   = result.Detected;
             _failed = false;
             _retry.Stop();
             SetStatus(Loc.StatusTranslated(result.Detected));
@@ -278,36 +280,32 @@ public partial class MainWindow : Window
 
     void Swap_Click(object s, RoutedEventArgs e)
     {
-        if (SrcCombo.SelectedItem is not string srcName) return;
-        var srcCode = DeepLApi.SrcLangs[srcName];
-        if (srcCode == "auto") return;   // can't swap auto
+        if (SrcCombo.SelectedItem is not string srcName || TgtCombo.SelectedItem is not string tgtName) return;
+        var (newSrc, newTgt) = DeepLApi.Swap(DeepLApi.SrcLangs[srcName], DeepLApi.TgtLangs[tgtName], _detected);
 
-        // Find target's matching source entry
-        var tgtCode = DeepLApi.TgtLangs[(string)TgtCombo.SelectedItem!];
-        var baseTgt = tgtCode.Split('-')[0];
-
-        var newSrc = DeepLApi.SrcLangs.Keys.FirstOrDefault(k => DeepLApi.SrcLangs[k] == baseTgt);
-        var newTgt = DeepLApi.TgtLangs.Keys.FirstOrDefault(k => DeepLApi.TgtLangs[k].StartsWith(srcCode));
-
-        if (newSrc != null) SrcCombo.SelectedItem = newSrc;
-        if (newTgt != null) TgtCombo.SelectedItem = newTgt;
+        SrcCombo.SelectedItem = DeepLApi.SrcLangs.First(kv => kv.Value == newSrc).Key;
+        TgtCombo.SelectedItem = DeepLApi.TgtLangs.First(kv => kv.Value == newTgt).Key;
 
         (SrcBox.Text, TgtBox.Text) = (TgtBox.Text, SrcBox.Text);
-        _lastSrc = "";
+        _detected = null;
+        _lastSrc  = "";
     }
 
     void Clear_Click(object s, RoutedEventArgs e)
     {
         SrcBox.Clear();
         TgtBox.Clear();
-        _lastSrc = "";
+        _detected = null;
+        _lastSrc  = "";
         SetStatus(Loc.StatusReady);
     }
 
     void Copy_Click(object s, RoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(TgtBox.Text))
-            Clipboard.SetText(TgtBox.Text);
+        if (string.IsNullOrEmpty(TgtBox.Text)) return;
+        // Another program can hold the clipboard for a moment, which makes the call throw.
+        try   { Clipboard.SetText(TgtBox.Text); SetStatus(Loc.StatusCopied); }
+        catch (Exception) { SetStatus(Loc.StatusClipboardBusy); }
     }
 
     void Verbindung_Click(object s, RoutedEventArgs e)
@@ -416,7 +414,10 @@ public partial class MainWindow : Window
     // Called by App when Ctrl+C+C fires
     public void OnCtrlCC()
     {
-        var text = Clipboard.GetText().Trim();
+        // Ctrl+C+C fires right after another program copied, so the clipboard can still be busy.
+        string text;
+        try   { text = Clipboard.GetText().Trim(); }
+        catch (Exception) { SetStatus(Loc.StatusClipboardBusy); return; }
         if (text.Length < 2) return;
 
         Show();

@@ -125,6 +125,23 @@ public static class DeepLApi
         return detected.Equals("de", StringComparison.OrdinalIgnoreCase) ? "en-US" : "de";
     }
 
+    /// <summary>
+    /// Returns the source and target codes after the swap button is pressed. With automatic
+    /// detection the language DeepL detected takes the place of the source. When nothing was
+    /// detected yet, or the old source is not a target language, the new target follows the
+    /// same rule as <see cref="AutoTarget"/>: German goes to English (US), everything else to German.
+    /// </summary>
+    public static (string Src, string Tgt) Swap(string srcCode, string tgtCode, string? detectedLang)
+    {
+        var newSrc = tgtCode.Split('-')[0].ToLowerInvariant();
+        var oldSrc = srcCode == "auto" ? detectedLang?.Split('-')[0].ToLowerInvariant() : srcCode;
+        var newTgt = oldSrc == null ? null
+                   : TgtLangs.Values.FirstOrDefault(v => v.Split('-')[0] == oldSrc);
+        if (newTgt == null || newTgt.Split('-')[0] == newSrc)
+            newTgt = newSrc == "de" ? "en-US" : "de";
+        return (newSrc, newTgt);
+    }
+
     public static bool IsTokenExpired(string token)
     {
         try
